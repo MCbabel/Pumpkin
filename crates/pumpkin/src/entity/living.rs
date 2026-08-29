@@ -1520,14 +1520,12 @@ impl LivingEntity {
 
     pub fn on_death(
         &self,
+        dyn_self: &dyn EntityBase,
         damage_type: DamageType,
         source: Option<&dyn EntityBase>,
         cause: Option<&dyn EntityBase>,
     ) {
         let world = self.entity.world.load();
-        let Some(dyn_self) = world.get_entity_by_id(self.entity.entity_id) else {
-            return;
-        };
         if self
             .dead
             .compare_exchange(false, true, Relaxed, Relaxed)
@@ -1537,7 +1535,7 @@ impl LivingEntity {
             self.jumping.store(false, Relaxed);
 
             // Statistics updates
-            self.update_death_stats(&*dyn_self, cause);
+            self.update_death_stats(dyn_self, cause);
 
             // Plays the death sound
             world.send_entity_status(&self.entity, EntityStatus::Death, Some(ActorEventID::Death));
@@ -1603,7 +1601,7 @@ impl LivingEntity {
             self.drop_equipment(looting_level);
 
             // Broadcast death message if it's a player and the gamerule is enabled
-            self.broadcast_death_message(&*dyn_self, damage_type, source, cause);
+            self.broadcast_death_message(dyn_self, damage_type, source, cause);
 
             // Trigger on_mob_death for active status effects
             let active_effects_vec: Vec<_> = {
